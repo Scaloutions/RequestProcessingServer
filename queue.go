@@ -1,7 +1,9 @@
 package main
 
-// Queue is a basic FIFO queue based on a circular list that resizes as needed.
-// Borrowed from:  https://gist.github.com/moraes/2141121
+import (
+	"github.com/golang/glog"
+)
+
 type TSRequest struct {
 	UserId        string
 	PriceDollars  float64
@@ -13,43 +15,56 @@ type TSRequest struct {
 }
 
 type RequestsQueue struct {
-	nodes []TSRequest
-	size  int
-	head  int
-	tail  int
-	count int
+	size int32
+	head *QueueElement
+	tail *QueueElement
 }
 
-// func NewQueue(size int) *RequestsQueue {
-// 	return &RequestsQueue{
-// 		nodes: make([]*TSRequest, size),
-// 		size:  size,
-// 	}
-// }
-
-// Push adds a node to the queue.
-func (q *RequestsQueue) Push(n TSRequest) {
-	if q.head == q.tail && q.count > 0 {
-		nodes := make([]TSRequest, len(q.nodes)+q.size)
-		copy(nodes, q.nodes[q.head:])
-		copy(nodes[len(q.nodes)-q.head:], q.nodes[:q.head])
-		q.head = 0
-		q.tail = len(q.nodes)
-		q.nodes = nodes
-	}
-	q.nodes[q.tail] = n
-	q.tail = (q.tail + 1) % len(q.nodes)
-	q.count++
-
+type QueueElement struct {
+	value interface{}
+	next  *QueueElement
 }
 
-// Pop removes and returns a node from the queue in first to last order.
-func (q *RequestsQueue) Pop() TSRequest {
-	if q.count == 0 {
-		return TSRequest{} //nil
+func (q *RequestsQueue) Size() int32 {
+	return q.size
+}
+
+func (q *RequestsQueue) Head() *QueueElement {
+	return q.head
+}
+
+func (q *RequestsQueue) Enqueue(element interface{}) {
+	newElement := QueueElement{
+		value: element,
+		next:  nil,
 	}
-	node := q.nodes[q.head]
-	q.head = (q.head + 1) % len(q.nodes)
-	q.count--
-	return node
+
+	if q.size == 0 {
+		q.head = &newElement
+		q.tail = &newElement
+	} else {
+		q.tail.next = &newElement
+		q.tail = &newElement
+	}
+
+	q.size++
+}
+
+func (q *RequestsQueue) Dequeue() {
+	if q.size > 0 {
+		if q.size == 1 {
+			q.head = nil
+		} else {
+			q.head = q.head.next
+		}
+		q.size--
+	}
+}
+
+func (q *RequestsQueue) printQueue() {
+	var current = q.head
+	for current != nil {
+		glog.Info(current.value)
+		current = current.next
+	}
 }

@@ -15,12 +15,8 @@ const (
 	authenticatePath     = "authenticate"
 )
 
-type RequestQueue struct {
-}
-
-var UserRequestsMap = make(map[string]RequestQueue)
-
-func sendHttpRequest(requestBody map[string]interface{}, path string) map[string]interface{} {
+// FUNCTION TO SENT A HTTP REQUEST
+func sendHttpRequest(requestBody map[string]interface{}, path string) *http.Response {
 	bytesRepresentation, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Fatalln(err)
@@ -31,16 +27,13 @@ func sendHttpRequest(requestBody map[string]interface{}, path string) map[string
 		log.Fatalln(err)
 	}
 
-	var result map[string]interface{}
-
-	json.NewDecoder(resp.Body).Decode(&result)
-
-	// glog.Info("$$$$$$$$$$$$$$$$$$$ RETURNED ")
-	// log.Println("\n\n\n\n\n\n $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", result, len(result))
-	// glog.Info("$$$$$$$$$$$$$$$$$$$ DONE ")
-
-	return result
+	return resp
 }
+
+type RequestQueue struct {
+}
+
+var UserRequestsMap = make(map[string]RequestQueue)
 
 // Authenticate User
 func authenticateUser(userId string) {
