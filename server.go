@@ -39,15 +39,16 @@ type Response struct {
 }
 
 func handleHttpRequestResponse(requestBody map[string]interface{}, path string, RequestsQueue *RequestsQueue, CommandNumber int) {
-	glog.Info("################################################### LOOKING AT: ", path, CommandNumber)
+	glog.Info("PROCESSING PATH: ", path, " Command number: ", CommandNumber)
 	var httpResponse = sendHttpRequest(requestBody, path)
 	var httpJsonResponse map[string]interface{}
 	json.NewDecoder(httpResponse.Body).Decode(&httpJsonResponse)
 
 	if httpResponse.StatusCode == 200 {
-		glog.Info("\n\n Request was suceessful. Response is:", httpJsonResponse)
+		glog.Info("Request was successful. Response is:", httpJsonResponse)
 	} else {
-		glog.Info("\n OOPS :(")
+		// TODO: WHAT TO DO HERE?
+		glog.Info(">>>>>>>>>>>>> OOPS :(")
 	}
 
 	// glog.Info("######### BEFORE REMOVING")
@@ -59,67 +60,35 @@ func handleHttpRequestResponse(requestBody map[string]interface{}, path string, 
 }
 
 func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
-	// Indicate that a new routine has been spin up for user
 	UserIdRequestQueueMap[userId].RunningGoRoutine = true
-	glog.Info("\n\n\n\n\n\n\n\n\n\n ########## Inside a new routine for user: ", userId)
+	glog.Info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ Inside a new routine for user: ", userId)
 	currentReqNode := RequestsQueue.Head()
-
-	if currentReqNode == nil {
-		// glog.Info("!!!!!!!!! HEAD IS NULLL")
-	}
 
 	for currentReqNode != nil {
 		i := currentReqNode.value
 		currentRequest := i.(TSRequest)
 
 		switch currentRequest.Command {
-		case "add":
+		case ADD:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"PriceDollars":  currentRequest.PriceDollars,
 				"PriceCents":    currentRequest.PriceCents,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "add", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, ADD, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "quote":
+		case QUOTE:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"Stock":         currentRequest.Stock,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "quote", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, QUOTE, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "buy":
-			requestBody := map[string]interface{}{
-				"UserId":        userId,
-				"Stock":         currentRequest.Stock,
-				"PriceDollars":  currentRequest.PriceDollars,
-				"PriceCents":    currentRequest.PriceCents,
-				"CommandNumber": currentRequest.CommandNumber}
-
-			handleHttpRequestResponse(requestBody, "buy", RequestsQueue, currentRequest.CommandNumber)
-			break
-
-		case "commit_buy":
-			requestBody := map[string]interface{}{
-				"UserId":        userId,
-				"CommandNumber": currentRequest.CommandNumber}
-
-			handleHttpRequestResponse(requestBody, "commit_buy", RequestsQueue, currentRequest.CommandNumber)
-			break
-
-		case "cancel_buy":
-			requestBody := map[string]interface{}{
-				"UserId":        userId,
-				"CommandNumber": currentRequest.CommandNumber}
-
-			handleHttpRequestResponse(requestBody, "cancel_buy", RequestsQueue, currentRequest.CommandNumber)
-			break
-
-		case "sell":
+		case BUY:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"Stock":         currentRequest.Stock,
@@ -127,46 +96,26 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"PriceCents":    currentRequest.PriceCents,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "sell", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, BUY, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "commit_sell":
+		case COMMIT_BUY:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "commit_sell", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, COMMIT_BUY, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "cancel_sell":
+		case CANCEL_BUY:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "cancel_sell", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, CANCEL_BUY, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "set_buy_amount":
-			requestBody := map[string]interface{}{
-				"UserId":        userId,
-				"Stock":         currentRequest.Stock,
-				"PriceDollars":  currentRequest.PriceDollars,
-				"PriceCents":    currentRequest.PriceCents,
-				"CommandNumber": currentRequest.CommandNumber}
-
-			handleHttpRequestResponse(requestBody, "set_buy_amount", RequestsQueue, currentRequest.CommandNumber)
-			break
-
-		case "cancel_set_buy":
-			requestBody := map[string]interface{}{
-				"UserId":        userId,
-				"Stock":         currentRequest.Stock,
-				"CommandNumber": currentRequest.CommandNumber}
-
-			handleHttpRequestResponse(requestBody, "cancel_set_buy", RequestsQueue, currentRequest.CommandNumber)
-			break
-
-		case "set_buy_trigger":
+		case SELL:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"Stock":         currentRequest.Stock,
@@ -174,10 +123,26 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"PriceCents":    currentRequest.PriceCents,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "set_buy_trigger", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, SELL, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "set_sell_amount":
+		case COMMIT_SELL:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, COMMIT_SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case CANCEL_SELL:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, CANCEL_SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_BUY_AMOUNT:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"Stock":         currentRequest.Stock,
@@ -185,10 +150,19 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"PriceCents":    currentRequest.PriceCents,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "set_sell_amount", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, SET_BUY_AMOUNT, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "set_sell_trigger":
+		case CANCEL_SET_BUY:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, CANCEL_SET_BUY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_BUY_TRIGGER:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"Stock":         currentRequest.Stock,
@@ -196,24 +170,46 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"PriceCents":    currentRequest.PriceCents,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "set_sell_trigger", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, SET_BUY_TRIGGER, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "cancel_set_sell":
+		case SET_SELL_AMOUNT:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SET_SELL_AMOUNT, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_SELL_TRIGGER:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SET_SELL_TRIGGER, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case CANCEL_SET_SELL:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"Stock":         currentRequest.Stock,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "cancel_set_sell", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, CANCEL_SET_SELL, RequestsQueue, currentRequest.CommandNumber)
 			break
 
-		case "display_summary":
+		case DISPLAY_SUMMARY:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, "display_summary", RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
 			break
 
 		}
@@ -222,7 +218,6 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 
 	glog.Info("EXITING ROUTINE FOR USER ", userId, " .BYEEEE")
 	UserIdRequestQueueMap[userId].RunningGoRoutine = false
-
 }
 
 // func loggingMiddleware(next http.Handler) http.Handler {
@@ -232,12 +227,6 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 // 	})
 // }
 
-//Parse request and return Response Object
-// Get the user request -- done
-// Add to user map -- done
-// If there is a go routine thats servicing a user, do nothing
-// If there is no go routine, start one up
-// In the go routine, create the hhtp request and fire
 func parseRequest(w http.ResponseWriter, r *http.Request) {
 	msg := Response{}
 	err := json.NewDecoder(r.Body).Decode(&msg)
@@ -272,24 +261,13 @@ func parseRequest(w http.ResponseWriter, r *http.Request) {
 
 	// If user doesn't have a routine assigned, start a new one
 	if UserIdRequestQueueMap[msg.UserId].RunningGoRoutine == false {
-		glog.Info("\n No Routine for this user. Spinning new routine.. ")
+		glog.Info("\n No Routine for this user: ", msg.UserId, ". Spinning new routine.. \n\n\n\n\n\n")
 		go startProcessingUser(msg.UserId, UserIdRequestQueueMap[msg.UserId].UserRequests)
 	}
 
-	// glog.Info("$$$$$$$$ AFTER PROCESSING< QUE UE IS: ")
-	// UserIdRequestQueueMap[msg.UserId].UserRequests.printQueue()
-
-	//Set Content-Type header so that clients will know how to read response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	//Write json response back to response
-	// w.Write(msgJson)
-	// return msg
 }
-
-// Should get the request
-// Call the appropriate transaction server endpoint
-// Passing in all the info in the body
 
 func homeFunc(w http.ResponseWriter, r *http.Request) {
 	log.Println("Welcome to Request Processing Server!")
@@ -303,10 +281,7 @@ func main() {
 
 	// router.Use(loggingMiddleware)
 
-	// go startProcessing(UserIdRequestQueueMap)
-
 	router.HandleFunc("/", homeFunc).Methods("GET")
-	// ##TODO: Implement auth
 	router.HandleFunc("/api/authenticate", parseRequest).Methods("POST")
 	router.HandleFunc("/api/add", parseRequest).Methods("POST")
 	router.HandleFunc("/api/sell", parseRequest).Methods("POST")
