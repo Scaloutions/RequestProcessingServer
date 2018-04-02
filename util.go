@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	transactionServerUrl = "http://localhost:9090/api/"
+	transactionServerUrl = "http://transactionserver:9090/api/" //"http://localhost:9090/api/"
 	ADD                  = "add"
 	QUOTE                = "quote"
 	BUY                  = "buy"

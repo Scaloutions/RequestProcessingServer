@@ -1,0 +1,11 @@
+version: '3.4'
+
+services:
+    requestprocessing:
+      # build: .
+      image: requestprocessing:scaloutions
+      restart: always
+      ports: 
+        - "9091:9091"
+      extra_hosts:
+        transactionserver: 192.168.1.138

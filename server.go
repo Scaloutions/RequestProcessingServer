@@ -274,10 +274,10 @@ func homeFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	glog.Info("SAVING XML LOG FILE")
 	router := mux.NewRouter()
 	flag.Usage = usage
 	flag.Parse()
+	// glog.Info("SAVING XML LOG FILE")
 
 	// router.Use(loggingMiddleware)
 
