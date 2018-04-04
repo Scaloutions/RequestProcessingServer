@@ -209,6 +209,15 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"UserId":        userId,
 				"CommandNumber": currentRequest.CommandNumber}
 
+			// should call audit server
+			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case DUMPLOG:
+			requestBody := map[string]interface{}{
+				"FileName":      userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
 			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
 			break
 

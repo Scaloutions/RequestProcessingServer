@@ -24,6 +24,7 @@ const (
 	SET_SELL_TRIGGER     = "set_sell_trigger"
 	CANCEL_SET_SELL      = "cancel_set_sell"
 	DISPLAY_SUMMARY      = "display_summary"
+	DUMPLOG              = "dumplog"
 	authenticatePath     = "authenticate"
 )
 
