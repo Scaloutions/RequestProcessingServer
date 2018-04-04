@@ -218,7 +218,7 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"FileName":      userId,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
+			handleHttpRequestResponse(requestBody, DUMPLOG, RequestsQueue, currentRequest.CommandNumber)
 			break
 
 		}
