@@ -1,12 +1,13 @@
 package main
 
 import (
-	"os"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
 	"github.com/golang/glog"
 	"github.com/gorilla/mux"
 )
@@ -17,18 +18,16 @@ func usage() {
 }
 
 // User map
-// var UserMap = make(map[string]*Account)
 var f *os.File = nil
+
+var UserIdRequestQueueMap = map[string]*UserTSRequestsDetails{}
+
 var transactionHistory []string
 
-// func authenticateUser(userId string) {
-// 	f = getFilePointer()
-	// account := initializeAccount(userId)
-	// UserMap[userId] = &account
-	// glog.Info("##### Account Balance: ", account.Balance, " Available: ", account.Available)
-	// glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-// 	glog.Info("INFO: Retrieving user from the db..")
-// }
+type UserTSRequestsDetails struct {
+	UserRequests     *RequestsQueue
+	RunningGoRoutine bool
+}
 
 type Response struct {
 	UserId        string
@@ -39,148 +38,251 @@ type Response struct {
 	Stock         string
 }
 
-// func getUser(userId string) *Account {
-  // return UserMap[userId]
-//   r
-// }
+func handleHttpRequestResponse(requestBody map[string]interface{}, path string, RequestsQueue *RequestsQueue, CommandNumber int) {
+	glog.Info("PROCESSING PATH: ", path, " Command number: ", CommandNumber)
+	var httpResponse = sendHttpRequest(requestBody, path)
+	var httpJsonResponse map[string]interface{}
+	json.NewDecoder(httpResponse.Body).Decode(&httpJsonResponse)
 
-func loggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Println(r.RequestURI)
-        next.ServeHTTP(w, r)
-    })
+	if httpResponse.StatusCode == 200 {
+		glog.Info("Request was successful. Response is:", httpJsonResponse)
+	} else {
+		// TODO: WHAT TO DO HERE?
+		glog.Info(">>>>>>>>>>>>> OOPS :(")
+	}
+
+	// glog.Info("######### BEFORE REMOVING")
+	// RequestsQueue.printQueue()
+	RequestsQueue.Dequeue()
+	// glog.Info("######### AFTER REMOVING")
+	// RequestsQueue.printQueue()
+
 }
 
+func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
+	UserIdRequestQueueMap[userId].RunningGoRoutine = true
+	glog.Info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ Inside a new routine for user: ", userId)
+	currentReqNode := RequestsQueue.Head()
 
-//Parse request and return Response Object
+	for currentReqNode != nil {
+		i := currentReqNode.value
+		currentRequest := i.(TSRequest)
+
+		switch currentRequest.Command {
+		case ADD:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, ADD, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case QUOTE:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, QUOTE, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case BUY:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, BUY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case COMMIT_BUY:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, COMMIT_BUY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case CANCEL_BUY:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, CANCEL_BUY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SELL:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case COMMIT_SELL:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, COMMIT_SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case CANCEL_SELL:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, CANCEL_SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_BUY_AMOUNT:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SET_BUY_AMOUNT, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case CANCEL_SET_BUY:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, CANCEL_SET_BUY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_BUY_TRIGGER:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SET_BUY_TRIGGER, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_SELL_AMOUNT:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SET_SELL_AMOUNT, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case SET_SELL_TRIGGER:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"PriceDollars":  currentRequest.PriceDollars,
+				"PriceCents":    currentRequest.PriceCents,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, SET_SELL_TRIGGER, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case CANCEL_SET_SELL:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"Stock":         currentRequest.Stock,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, CANCEL_SET_SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		case DISPLAY_SUMMARY:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
+			break
+
+		}
+		currentReqNode = currentReqNode.next
+	}
+
+	glog.Info("EXITING ROUTINE FOR USER ", userId, " .BYEEEE")
+	UserIdRequestQueueMap[userId].RunningGoRoutine = false
+}
+
+// func loggingMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		log.Println(r.RequestURI)
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
+
 func parseRequest(w http.ResponseWriter, r *http.Request) {
 	msg := Response{}
-
-	//Parse json request body and use it to set fields on user
-	//Note that user is passed as a pointer variable so that it's fields can be modified
 	err := json.NewDecoder(r.Body).Decode(&msg)
 	if err != nil {
 		panic(err)
-  }
-  
-	//TODO: rewrite this!!
-	switch msg.Command {
-    case "authenticate":
-      authenticateUser(msg.UserId)
-    case "add":
-      addFunds(msg.UserId, msg.PriceDollars, msg.PriceCents, msg.CommandNumber)
-      // add(account, msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("SUCCESS: Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("SUCCESS: Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: ADD Successful \n")
-    case "buy":
-      glog.Info("\n\n############################### INFO: Executing BUY FOR... ", msg.PriceDollars, msg.CommandNumber)
-      // buy(account, msg.Stock, msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: BUY Successful")
-    case "sell":
-      glog.Info("\n\n############################### INFO: Executing SELL OF ", msg.Stock, msg.CommandNumber)
-      // sell(account, msg.Stock,msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: BUY Successful")
-    case "commit_sell":
-      glog.Info("\n\n############################### INFO: Executing COMMIT SELL ", msg.CommandNumber)
-      // commitSell(account, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: COMMIT SELL Successful")
-    case "commit_buy":
-      glog.Info("\n\n############################### INFO: Executing COMMIT BUY ", msg.CommandNumber)
-      // commitBuy(account, f, msg.CommandNumber, msg.Command)
-      glog.Info("\n############################### SUCCESS: COMMIT BUY Successful")
-      // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-    case "cancel_buy":
-      glog.Info("\n\n############################### INFO: Executing CANCEL BUY ", msg.CommandNumber)
-      // cancelBuy(account, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: CANCEL BUY Successful")
-    case "cancel_sell":
-      glog.Info("\n\n############################### INFO: Executing CANCEL SELL ", msg.CommandNumber)
-      // cancelSell(account, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: CANCEL SELL Successful")
-    case "set_buy_amount":
-      glog.Info("\n\n############################### INFO: Executing SET BUY AMOUNT ", msg.CommandNumber)
-      // setBuyAmount(account, msg.Stock, msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: SET BUY AMOUNT Successful")
-    case "set_sell_amount":
-      glog.Info("\n\n############################### INFO: Executing SET SELL AMOUNT ", msg.CommandNumber)
-      // setSellAmount(account, msg.Stock, msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: SET SELL AMOUNT Successful")
-    case "cancel_set_buy":
-      glog.Info("\n\n############################### INFO: Executing CANCEL SET BUY ", msg.CommandNumber)
-      // cancelSetBuy(account, msg.Stock, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: CANCEL SET BUY Successful")
-    case "cancel_set_sell":
-      glog.Info("\n\n############################### INFO: Executing CANCEL SET SELL ", msg.CommandNumber)
-      // cancelSetSell(account, msg.Stock, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: CANCEL SET SELL Successful")
-    case "set_buy_trigger":
-      glog.Info("\n\n############################### INFO: Executing SET BUY TRIGGER ", msg.CommandNumber)
-      // setBuyTrigger(account, msg.Stock, msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: SET BUY TRIGGER Successful")
-    case "set_sell_trigger":
-      glog.Info("\n\n############################### INFO: Executing SET SELL TRIGGER ", msg.CommandNumber)
-      // setSellTrigger(account, msg.Stock, msg.PriceDollars, f, msg.CommandNumber, msg.Command)
-      // // // glog.Info("Account Balance: ", account.Balance, " Available: ", account.Available)
-      // // glog.Info("Account Stocks: ", account.StockPortfolio["S"])
-      glog.Info("\n############################### SUCCESS: SET SELL TRIGGER Successful")
-    case "display_summary":
-      glog.Info("\n\n############################### INFO: Executing DISPLAY SUMMARY ", msg.CommandNumber)
-      // displaySummary(account, transactionHistory)
-      glog.Info("\n############################### SUCCESS: DISPLAY SUMMARY Successful")
-    case "dumplog":
-      glog.Info("SAVING XML LOG FILE")
-    default:
-      panic("Oh noooo we can't process this request :(")
 	}
 
-	//Set Content-Type header so that clients will know how to read response
+	var incomingReq = TSRequest{
+		UserId:        msg.UserId,
+		PriceDollars:  msg.PriceDollars,
+		PriceCents:    msg.PriceCents,
+		Command:       msg.Command,
+		CommandNumber: msg.CommandNumber,
+		Stock:         msg.Stock,
+		RequestType:   "POST",
+	}
+
+	// Checking if user has a valid request array
+	if _, ok := UserIdRequestQueueMap[msg.UserId]; !ok {
+		UserIdRequestQueueMap[msg.UserId] = &UserTSRequestsDetails{
+			UserRequests: &RequestsQueue{
+				0, nil, nil,
+			}, RunningGoRoutine: false,
+		}
+	}
+
+	// Adding to the the request queue map
+	// glog.Info("Adding to queue")
+	UserIdRequestQueueMap[msg.UserId].UserRequests.Enqueue(incomingReq)
+	// glog.Info("QUEUES IS:", UserIdRequestQueueMap[msg.UserId].UserRequests.size)
+	// UserIdRequestQueueMap[msg.UserId].UserRequests.printQueue()
+
+	// If user doesn't have a routine assigned, start a new one
+	if UserIdRequestQueueMap[msg.UserId].RunningGoRoutine == false {
+		glog.Info("\n No Routine for this user: ", msg.UserId, ". Spinning new routine.. \n\n\n\n\n\n")
+		go startProcessingUser(msg.UserId, UserIdRequestQueueMap[msg.UserId].UserRequests)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	//Write json response back to response
-	// w.Write(msgJson)
-	// return msg
 }
-// Should get the request
-// Call the appropriate transaction server endpoint
-// Passing in all the info in the body
 
 func homeFunc(w http.ResponseWriter, r *http.Request) {
-  log.Println("Welcome to Request Processing Server!")
+	log.Println("Welcome to Request Processing Server!")
 }
 
 func main() {
-  glog.Info("SAVING XML LOG FILE")
 	router := mux.NewRouter()
 	flag.Usage = usage
 	flag.Parse()
+	// glog.Info("SAVING XML LOG FILE")
 
-	router.Use(loggingMiddleware)
+	// router.Use(loggingMiddleware)
 
-  router.HandleFunc("/", homeFunc).Methods("GET")
-  // ##TODO: Implement auth
-  router.HandleFunc("/api/authenticate", parseRequest).Methods("POST")
+	router.HandleFunc("/", homeFunc).Methods("GET")
+	router.HandleFunc("/api/authenticate", parseRequest).Methods("POST")
 	router.HandleFunc("/api/add", parseRequest).Methods("POST")
 	router.HandleFunc("/api/sell", parseRequest).Methods("POST")
 	router.HandleFunc("/api/buy", parseRequest).Methods("POST")
@@ -196,6 +298,7 @@ func main() {
 	router.HandleFunc("/api/set_sell_trigger", parseRequest).Methods("POST")
 	router.HandleFunc("/api/display_summary", parseRequest).Methods("POST")
 	router.HandleFunc("/api/dumplog", parseRequest).Methods("POST")
+	router.HandleFunc("/api/quote", parseRequest).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":9091", router))
 
