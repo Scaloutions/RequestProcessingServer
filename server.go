@@ -211,6 +211,14 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
 			break
 
+		case DUMP_LOG:
+			requestBody := map[string]interface{}{
+				"UserId":        userId,
+				"CommandNumber": currentRequest.CommandNumber}
+
+			handleHttpRequestResponse(requestBody, DUMP_LOG, RequestsQueue, currentRequest.CommandNumber)
+			break
+
 		}
 		currentReqNode = currentReqNode.next
 	}
