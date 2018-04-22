@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -41,22 +42,20 @@ type Response struct {
 func handleHttpRequestResponse(requestBody map[string]interface{}, path string, RequestsQueue *RequestsQueue, CommandNumber int) {
 	glog.Info("PROCESSING PATH: ", path, " Command number: ", CommandNumber)
 	var httpResponse = sendHttpRequest(requestBody, path)
-	var httpJsonResponse map[string]interface{}
-	json.NewDecoder(httpResponse.Body).Decode(&httpJsonResponse)
+	defer httpResponse.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		glog.Error("Error Reading response Body ", httpResponse)
+	}
+	bodyString := string(bodyBytes)
 
 	if httpResponse.StatusCode == 200 {
-		glog.Info("Request was successful. Response is:", httpJsonResponse)
+		glog.Info("Request was successful. Response is:", bodyString)
 	} else {
-		// TODO: WHAT TO DO HERE?
-		glog.Info(">>>>>>>>>>>>> OOPS :(")
+		glog.Error(">>>>>>>>>>>>>>>>>>>>>>>>> \n\tGot ERROR back: response body ", bodyString)
 	}
 
-	// glog.Info("######### BEFORE REMOVING")
-	// RequestsQueue.printQueue()
 	RequestsQueue.Dequeue()
-	// glog.Info("######### AFTER REMOVING")
-	// RequestsQueue.printQueue()
-
 }
 
 func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
