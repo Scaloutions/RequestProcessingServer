@@ -40,20 +40,16 @@ type Response struct {
 }
 
 func handleHttpRequestResponse(requestBody map[string]interface{}, path string, RequestsQueue *RequestsQueue, CommandNumber int) {
+
 	glog.Info("PROCESSING PATH: ", path, " Command number: ", CommandNumber)
-	glog.Info("GOING TO MAKE THE REQUEST")
-
 	var httpResponse = sendHttpRequest(requestBody, path)
-	defer httpResponse.Body.Close()
 
-	glog.Info("READING RESPONSE")
 	bodyBytes, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		glog.Error("Error Reading response Body ", httpResponse)
 	}
 	bodyString := string(bodyBytes)
-
-	glog.Info("DONE READING RESPONSE")
+	httpResponse.Body.Close()
 
 	if httpResponse.StatusCode == 200 {
 		glog.Info("Request was successful. Response is:", bodyString)
@@ -61,13 +57,10 @@ func handleHttpRequestResponse(requestBody map[string]interface{}, path string, 
 		glog.Error(">>>>>>>>>>>>>>>>>>>>>>>>> \n\tGot ERROR back: response body ", bodyString)
 	}
 
-	glog.Info("TRYING TO DEQUEUE")
-
 	RequestsQueue.Dequeue()
 }
 
 func handleHttpRequestAsync(requestBody map[string]interface{}, path string, CommandNumber int) {
-	glog.Info("ASYNC REQUEST IS ABOUT TO HAPPEN................")
 	glog.Info("PROCESSING PATH: ", path, " Command number: ", CommandNumber)
 	var httpResponse = sendHttpRequest(requestBody, path)
 	defer httpResponse.Body.Close()
@@ -92,7 +85,6 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 	currentReqNode := RequestsQueue.Head()
 
 	for currentReqNode != nil {
-		glog.Info("LOOKING AT A COMMAND TO MAKE THE REQUEST")
 		i := currentReqNode.value
 		currentRequest := i.(TSRequest)
 
@@ -117,7 +109,7 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 			// RequestsQueue.Dequeue()
 			// handleHttpRequestResponse(requestBody, CANCEL_SET_SELL, RequestsQueue, currentRequest.CommandNumber)
 			// go handleHttpRequestAsync(requestBody, QUOTE, currentRequest.CommandNumber)
-			glog.Info("DONE GETTING QUOTE **************")
+
 			break
 
 		case BUY:
@@ -262,7 +254,6 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 // }
 
 func parseRequest(w http.ResponseWriter, r *http.Request) {
-	glog.Info("INSIDE PARSE REQUEST")
 	msg := Response{}
 	err := json.NewDecoder(r.Body).Decode(&msg)
 	if err != nil {
@@ -279,9 +270,6 @@ func parseRequest(w http.ResponseWriter, r *http.Request) {
 		RequestType:   "POST",
 	}
 
-	glog.Info("CONSTRUCTED REQ OBJECT")
-	glog.Info("CHECKING FOR USER IN MAP")
-
 	// Checking if user has a valid request array
 	if _, ok := UserIdRequestQueueMap[msg.UserId]; !ok {
 		UserIdRequestQueueMap[msg.UserId] = &UserTSRequestsDetails{
@@ -291,10 +279,7 @@ func parseRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	glog.Info("DONEEEEEEEE CHECKING FOR USER IN MAP")
-
 	// Adding to the the request queue map
-	// glog.Info("Adding to queue")
 	UserIdRequestQueueMap[msg.UserId].UserRequests.Enqueue(incomingReq)
 	// glog.Info("QUEUES IS:", UserIdRequestQueueMap[msg.UserId].UserRequests.size)
 	// UserIdRequestQueueMap[msg.UserId].UserRequests.printQueue()
@@ -320,6 +305,8 @@ func main() {
 	flag.Parse()
 
 	// router.Use(loggingMiddleware)
+
+	glog.Info("Request Processing Server is up! :D")
 
 	router.HandleFunc("/", homeFunc).Methods("GET")
 	router.HandleFunc("/api/authenticate", parseRequest).Methods("POST")

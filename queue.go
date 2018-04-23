@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/golang/glog"
-)
-
 type TSRequest struct {
 	UserId        string
 	PriceDollars  float64
@@ -34,8 +30,6 @@ func (q *RequestsQueue) Head() *QueueElement {
 }
 
 func (q *RequestsQueue) Enqueue(element interface{}) {
-	glog.Info("STARTING ENQUEUE")
-
 	newElement := QueueElement{
 		value: element,
 		next:  nil,
@@ -50,14 +44,9 @@ func (q *RequestsQueue) Enqueue(element interface{}) {
 	}
 
 	q.size++
-
-	glog.Info("FINISHED ENQUEUE")
-
 }
 
 func (q *RequestsQueue) Dequeue() {
-	glog.Info("STARTING DEQUEUE")
-
 	if q.size > 0 {
 		if q.size == 1 {
 			q.head = nil
@@ -66,15 +55,11 @@ func (q *RequestsQueue) Dequeue() {
 		}
 		q.size--
 	}
-
-	glog.Info("FINISHED DEQUEUE")
-
 }
 
 func (q *RequestsQueue) printQueue() {
 	var current = q.head
 	for current != nil {
-		glog.Info(current.value)
 		current = current.next
 	}
 }

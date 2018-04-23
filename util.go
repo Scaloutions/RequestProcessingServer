@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/golang/glog"
 )
 
 const (
@@ -32,21 +30,15 @@ const (
 
 // FUNCTION TO SENT A HTTP REQUEST
 func sendHttpRequest(requestBody map[string]interface{}, path string) *http.Response {
-	glog.Info("CONSTRUCTING REQUEST")
-
 	bytesRepresentation, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	glog.Info("FIRING REQUEST")
-
 	resp, err := http.Post(transactionServerUrl+path, "application/json", bytes.NewBuffer(bytesRepresentation))
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	glog.Info("REQUEST RETURNED A RESPONSE")
 
 	return resp
 }
