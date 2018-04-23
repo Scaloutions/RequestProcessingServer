@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -25,6 +27,7 @@ const (
 	SET_SELL_TRIGGER = "set_sell_trigger"
 	CANCEL_SET_SELL  = "cancel_set_sell"
 	DISPLAY_SUMMARY  = "display_summary"
+	DUMPLOG          = "dumplog"
 	authenticatePath = "authenticate"
 )
 
@@ -35,10 +38,25 @@ func sendHttpRequest(requestBody map[string]interface{}, path string) *http.Resp
 		log.Fatalln(err)
 	}
 
-	resp, err := http.Post(transactionServerUrl+path, "application/json", bytes.NewBuffer(bytesRepresentation))
-	if err != nil {
-		log.Fatalln(err)
+	// resp, err := http.Post(transactionServerUrl+path, "application/json", bytes.NewBuffer(bytesRepresentation))
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	req, reqErr := http.NewRequest("POST", transactionServerUrl+path, bytes.NewBuffer(bytesRepresentation))
+	if reqErr != nil {
+		log.Fatalln(reqErr)
 	}
+
+	req.Header.Set("Connection", "close")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		glog.Error("Error sending a POST request to Transaction server", err)
+	}
+
+	req.Close = true
 
 	return resp
 }

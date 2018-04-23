@@ -228,6 +228,16 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 			handleHttpRequestResponse(requestBody, CANCEL_SET_SELL, RequestsQueue, currentRequest.CommandNumber)
 			break
 
+		case DUMPLOG:
+			glog.Info("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n #$#$#$#$#$#$#", currentRequest)
+			// requestBody := map[string]interface{}{
+			// 	"UserId":        userId,
+			// 	"Stock":         currentRequest.Stock,
+			// 	"CommandNumber": currentRequest.CommandNumber}
+
+			// handleHttpRequestResponse(requestBody, CANCEL_SET_SELL, RequestsQueue, currentRequest.CommandNumber)
+			break
+
 		case DISPLAY_SUMMARY:
 			requestBody := map[string]interface{}{
 				"UserId":        userId,
