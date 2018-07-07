@@ -58,6 +58,26 @@ func handleHttpRequestResponse(requestBody map[string]interface{}, path string, 
 	RequestsQueue.Dequeue()
 }
 
+func handleHttpRequestAsync(requestBody map[string]interface{}, path string, CommandNumber int) {
+	glog.Info("ASYNC REQUEST IS ABOUT TO HAPPEN................")
+	glog.Info("PROCESSING PATH: ", path, " Command number: ", CommandNumber)
+	var httpResponse = sendHttpRequest(requestBody, path)
+	defer httpResponse.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		glog.Error("Error Reading response Body ", httpResponse)
+	}
+	bodyString := string(bodyBytes)
+
+	if httpResponse.StatusCode == 200 {
+		glog.Info("Request was successful. Response is:", bodyString)
+	} else {
+		glog.Error(">>>>>>>>>>>>>>>>>>>>>>>>> \n\tGot ERROR back: response body ", bodyString)
+	}
+
+	// RequestsQueue.Dequeue()
+}
+
 func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 	UserIdRequestQueueMap[userId].RunningGoRoutine = true
 	glog.Info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ Inside a new routine for user: ", userId)
@@ -84,7 +104,11 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"Stock":         currentRequest.Stock,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, QUOTE, RequestsQueue, currentRequest.CommandNumber)
+			// handleHttpRequestResponse(requestBody, QUOTE, RequestsQueue, currentRequest.CommandNumber)
+			RequestsQueue.Dequeue()
+			// handleHttpRequestResponse(requestBody, CANCEL_SET_SELL, RequestsQueue, currentRequest.CommandNumber)
+			go handleHttpRequestAsync(requestBody, QUOTE, currentRequest.CommandNumber)
+			glog.Info("DONE GETTING QUOTE **************")
 			break
 
 		case BUY:
@@ -208,7 +232,9 @@ func startProcessingUser(userId string, RequestsQueue *RequestsQueue) {
 				"UserId":        userId,
 				"CommandNumber": currentRequest.CommandNumber}
 
-			handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
+			RequestsQueue.Dequeue()
+			go handleHttpRequestAsync(requestBody, DISPLAY_SUMMARY, currentRequest.CommandNumber)
+			// handleHttpRequestResponse(requestBody, DISPLAY_SUMMARY, RequestsQueue, currentRequest.CommandNumber)
 			break
 
 		case DUMP_LOG:
